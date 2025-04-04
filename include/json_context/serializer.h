@@ -103,7 +103,8 @@ namespace json_context {
 
             reflect::for_each<T>([&](auto I) {
                 using member_type = reflect::member_type<I, T>;
-                object.write_key(reflect::member_name<I, T>());
+                constexpr auto key = reflect::member_name<I, T>();
+                object.write_key(key);
                 serializer<member_type, Context>{}(object, reflect::get<I>(value), ctx);
             });
 
@@ -121,7 +122,8 @@ namespace json_context {
 
             std::visit([&](const auto &inner_value) {
                 using member_type = std::remove_cvref_t<decltype(inner_value)>;
-                object.write_key(reflect::type_name<member_type>());
+                constexpr auto key = reflect::type_name<member_type>();
+                object.write_key(key);
                 serializer<member_type, Context>{}(object, inner_value, ctx);
             }, value);
 
