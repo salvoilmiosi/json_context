@@ -69,14 +69,19 @@ namespace json_context::visitors {
                 } else {
                     instance.write_direct(",");
                     if constexpr (Options.comma_space != 0 && Options.indent == 0) {
-                        instance.write_direct(std::format("{:{}}", " ", Options.comma_space));
+                        for (int i = 0; i < Options.comma_space; ++i) {
+                            instance.write_direct(" ");
+                        }
                     }
                 }
             }
 
             void write_indent() {
                 if constexpr (Options.indent != 0) {
-                    instance.write_direct(std::format("\n{:{}}", " ", indent * Options.indent));
+                    instance.write_direct("\n");
+                    for (int i = 0; i < indent * Options.indent; ++i) {
+                        instance.write_direct(" ");
+                    }
                 }
             }
 
@@ -128,14 +133,19 @@ namespace json_context::visitors {
                 } else {
                     instance.write_direct(",");
                     if constexpr (Options.comma_space != 0 && Options.indent == 0) {
-                        instance.write_direct(std::format("{:{}}", " ", Options.comma_space));
+                        for (int i = 0; i < Options.comma_space; ++i) {
+                            instance.write_direct(" ");
+                        }
                     }
                 }
             }
 
             void write_indent() {
                 if constexpr (Options.indent != 0) {
-                    instance.write_direct(std::format("\n{:{}}", " ", indent * Options.indent));
+                    instance.write_direct("\n");
+                    for (int i = 0; i < indent * Options.indent; ++i) {
+                        instance.write_direct(" ");
+                    }
                 }
             }
 
@@ -154,7 +164,9 @@ namespace json_context::visitors {
                 instance.write_value(key);
                 instance.write_direct(":");
                 if constexpr (Options.colon_space != 0) {
-                    instance.write_direct(std::format("{:{}}", " ", Options.colon_space));
+                    for (int i = 0; i < Options.colon_space; ++i) {
+                        instance.write_direct(" ");
+                    }
                 }
             }
         
