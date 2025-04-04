@@ -10,6 +10,7 @@ namespace json_context::visitors {
     struct json_visitor_options {
         int indent = 0;
         int colon_space = 0;
+        int comma_space = 0;
     };
 
     template<writers::writer W>
@@ -73,6 +74,9 @@ namespace json_context::visitors {
                     first = false;
                 } else {
                     instance.write_direct(",");
+                    if (instance.get_options().comma_space != 0 && instance.get_options().indent == 0) {
+                        instance.write_direct(std::format("{:{}}", " ", instance.get_options().comma_space));
+                    }
                 }
             }
 
@@ -124,6 +128,17 @@ namespace json_context::visitors {
 
             bool first = true;
 
+            void write_comma() {
+                if (first) {
+                    first = false;
+                } else {
+                    instance.write_direct(",");
+                    if (instance.get_options().comma_space != 0 && instance.get_options().indent == 0) {
+                        instance.write_direct(std::format("{:{}}", " ", instance.get_options().comma_space));
+                    }
+                }
+            }
+
             void write_indent() {
                 if (instance.get_options().indent != 0) {
                     instance.write_direct(std::format("\n{:{}}", " ", indent * instance.get_options().indent));
@@ -139,11 +154,7 @@ namespace json_context::visitors {
             }
 
             void write_key(std::string_view key) {
-                if (first) {
-                    first = false;
-                } else {
-                    instance.write_direct(",");
-                }
+                write_comma();
                 write_indent();
 
                 instance.write_value(key);

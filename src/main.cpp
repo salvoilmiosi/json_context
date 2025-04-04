@@ -35,6 +35,7 @@ int main() {
         .variant {test_variant{ 42, 69 }}
     }, {
         .indent = 2,
-        .colon_space = 1
+        .colon_space = 1,
+        .comma_space = 1
     }, 10));
 }
