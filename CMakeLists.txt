@@ -6,15 +6,20 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # bang server executable
 
-add_executable(json_context "")
+add_library(json_context INTERFACE)
 
-target_include_directories(json_context PRIVATE src)
-
-add_subdirectory(src)
+target_include_directories(json_context INTERFACE include)
 
 # external dependencies
 
 # reflect
 
 add_subdirectory(external/reflect)
-target_link_libraries(json_context PRIVATE reflect)
+target_link_libraries(json_context INTERFACE reflect)
+
+# main
+
+add_executable(json_context_main "")
+target_link_libraries(json_context_main PRIVATE json_context)
+
+add_subdirectory(src)
