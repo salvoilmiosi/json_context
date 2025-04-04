@@ -17,9 +17,6 @@ target_include_directories(json_context INTERFACE include)
 add_subdirectory(external/reflect)
 target_link_libraries(json_context INTERFACE reflect)
 
-# main
+# tests
 
-add_executable(json_context_main "")
-target_link_libraries(json_context_main PRIVATE json_context)
-
-add_subdirectory(src)
+add_subdirectory(tests)

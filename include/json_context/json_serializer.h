@@ -8,10 +8,10 @@ namespace json_context {
 
     template<typename T, writers::json_writer_options Options = writers::json_writer_options{}, typename Context = no_context>
     requires serializable<T, Context>
-    auto to_string_json(T &&value, const Context &ctx = {}) {
+    auto to_string_json(const T &value, const Context &ctx = {}) {
         std::string buf;
         writers::json_writer<std::string, Options> writer{buf};
-        serialize(writer, std::forward<T>(value), ctx);
+        serialize(writer, value, ctx);
         return buf;
     }
 }
