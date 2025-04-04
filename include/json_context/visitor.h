@@ -19,9 +19,14 @@ namespace json_context::visitors {
     };
 
     template<typename T>
+    concept object_visitor = inner_visitor<T> && requires (T &v) {
+        v.write_key(std::declval<std::string_view>());
+    };
+
+    template<typename T>
     concept visitor = visitor_base<T> && requires (T &v) {
         { v.begin_write_array() } -> inner_visitor;
-        { v.begin_write_object() } -> inner_visitor;
+        { v.begin_write_object() } -> object_visitor;
     };
 }
 
