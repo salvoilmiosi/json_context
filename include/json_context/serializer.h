@@ -19,6 +19,9 @@ namespace json_context {
     template<typename T, typename Context>
     concept serializable = is_complete<serializer<T, Context>>;
 
+    template<typename T>
+    concept writable_as_value = std::integral<T> || std::floating_point<T> || std::convertible_to<T, std::string_view>;
+
     struct no_context {};
 
     template<writers::writer W, typename T, typename Context = no_context> requires serializable<T, Context>
@@ -31,31 +34,7 @@ namespace json_context {
         }
     }
 
-    template<std::integral T, typename Context>
-    struct serializer<T, Context> {
-        template<writers::writer W>
-        void operator()(W &writer, T value) const {
-            writer.write_value(value);
-        }
-    };
-
-    template<std::floating_point T, typename Context>
-    struct serializer<T, Context> {
-        template<writers::writer W>
-        void operator()(W &writer, T value) const {
-            writer.write_value(value);
-        }
-    };
-
-    template<typename Context>
-    struct serializer<bool, Context> {
-        template<writers::writer W>
-        void operator()(W &writer, bool value) const {
-            writer.write_value(value);
-        }
-    };
-
-    template<std::convertible_to<std::string_view> T, typename Context>
+    template<writable_as_value T, typename Context>
     struct serializer<T, Context> {
         template<writers::writer W>
         void operator()(W &writer, const T &value) const {
