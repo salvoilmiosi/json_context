@@ -11,7 +11,7 @@ namespace json_context {
     auto to_string_json(T &&value, const Context &ctx = {}) {
         std::string buf;
         writers::json_writer<std::string, Options> writer{buf};
-        serializer<std::remove_cvref_t<T>, Context>{}(writer, std::forward<T>(value), ctx);
+        serialize(writer, std::forward<T>(value), ctx);
         return buf;
     }
 }

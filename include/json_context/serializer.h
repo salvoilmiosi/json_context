@@ -21,10 +21,20 @@ namespace json_context {
 
     struct no_context {};
 
+    template<writers::writer W, typename T, typename Context = no_context> requires serializable<T, Context>
+    void serialize(W &writer, const T &value, const Context &context = {}) {
+        serializer<T, Context> obj{};
+        if constexpr (requires { obj(writer, value, context); }) {
+            return obj(writer, value, context);
+        } else {
+            return obj(writer, value);
+        }
+    }
+
     template<std::integral T, typename Context>
     struct serializer<T, Context> {
         template<writers::writer W>
-        void operator()(W &writer, T value, const Context &ctx) const {
+        void operator()(W &writer, T value) const {
             writer.write_value(value);
         }
     };
@@ -32,7 +42,7 @@ namespace json_context {
     template<std::floating_point T, typename Context>
     struct serializer<T, Context> {
         template<writers::writer W>
-        void operator()(W &writer, T value, const Context &ctx) const {
+        void operator()(W &writer, T value) const {
             writer.write_value(value);
         }
     };
@@ -40,7 +50,7 @@ namespace json_context {
     template<typename Context>
     struct serializer<bool, Context> {
         template<writers::writer W>
-        void operator()(W &writer, bool value, const Context &ctx) const {
+        void operator()(W &writer, bool value) const {
             writer.write_value(value);
         }
     };
@@ -48,7 +58,7 @@ namespace json_context {
     template<std::convertible_to<std::string_view> T, typename Context>
     struct serializer<T, Context> {
         template<writers::writer W>
-        void operator()(W &writer, const T &value, const Context &ctx) const {
+        void operator()(W &writer, const T &value) const {
             writer.write_value(value);
         }
     };
@@ -65,7 +75,7 @@ namespace json_context {
 
             using value_type = std::ranges::range_value_t<Range>;
             for (auto &&value : range) {
-                serializer<value_type, Context>{}(array, std::forward<decltype(value)>(value), ctx);
+                serialize(array, std::forward<decltype(value)>(value), ctx);
             }
 
             array.end();
@@ -79,13 +89,8 @@ namespace json_context {
         void operator()(W &writer, const std::tuple<Ts ...> &tuple, const Context &ctx) const {
             auto array = writer.begin_write_array();
 
-            auto serialize_inner = [&](auto &&value) {
-                using value_type = std::remove_cvref_t<decltype(value)>;
-                serializer<value_type, Context>{}(array, std::forward<decltype(value)>(value), ctx);
-            };
-
             [&]<size_t ... Is>(std::index_sequence<Is ...>) {
-                (serialize_inner(std::get<Is>(tuple)), ...);
+                (serialize(array, std::get<Is>(tuple), ctx), ...);
             }(std::index_sequence_for<Ts ...>());
 
             array.end();
@@ -105,7 +110,7 @@ namespace json_context {
                 using member_type = reflect::member_type<I, T>;
                 constexpr auto key = reflect::member_name<I, T>();
                 object.write_key(key);
-                serializer<member_type, Context>{}(object, reflect::get<I>(value), ctx);
+                serialize(object, reflect::get<I>(value), ctx);
             });
 
             object.end();
@@ -124,7 +129,7 @@ namespace json_context {
                 using member_type = std::remove_cvref_t<decltype(inner_value)>;
                 constexpr auto key = reflect::type_name<member_type>();
                 object.write_key(key);
-                serializer<member_type, Context>{}(object, inner_value, ctx);
+                serialize(object, inner_value, ctx);
             }, value);
 
             object.end();
