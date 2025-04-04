@@ -26,16 +26,16 @@ namespace json_context {
 }
 
 int main() {
-    std::println("{}", json_context::to_string_json(test_struct {
+    std::println("{}", json_context::to_string_json<test_struct, {
+        .indent = 2,
+        .colon_space = 1,
+        .comma_space = 1
+    }>(test_struct {
         .foo{99},
         .hello {"World"},
         .inner {
             "Foo", "Bar", "Baz", { "Lorem", "Ipsum" }
         },
         .variant {test_variant{ 42, 69 }}
-    }, {
-        .indent = 2,
-        .colon_space = 1,
-        .comma_space = 1
-    }, 10));
+    }));
 }

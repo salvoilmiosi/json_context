@@ -13,23 +13,17 @@ namespace json_context::visitors {
         int comma_space = 0;
     };
 
-    template<writers::writer W>
+    template<writers::writer W, json_visitor_options Options = json_visitor_options{}>
     class json_visitor {
     private:
         W &writer;
-        json_visitor_options options;
 
     public:
-        explicit json_visitor(W &writer, json_visitor_options options = {})
-            : writer{writer}
-            , options{options} {}
+        explicit json_visitor(W &writer)
+            : writer{writer} {}
 
         void write_direct(std::string_view value) {
             writer.write(value);
-        }
-
-        const json_visitor_options &get_options() const {
-            return options;
         }
 
         void write_value(std::nullptr_t) {
@@ -74,15 +68,15 @@ namespace json_context::visitors {
                     first = false;
                 } else {
                     instance.write_direct(",");
-                    if (instance.get_options().comma_space != 0 && instance.get_options().indent == 0) {
-                        instance.write_direct(std::format("{:{}}", " ", instance.get_options().comma_space));
+                    if constexpr (Options.comma_space != 0 && Options.indent == 0) {
+                        instance.write_direct(std::format("{:{}}", " ", Options.comma_space));
                     }
                 }
             }
 
             void write_indent() {
-                if (instance.get_options().indent != 0) {
-                    instance.write_direct(std::format("\n{:{}}", " ", indent * instance.get_options().indent));
+                if constexpr (Options.indent != 0) {
+                    instance.write_direct(std::format("\n{:{}}", " ", indent * Options.indent));
                 }
             }
 
@@ -133,15 +127,15 @@ namespace json_context::visitors {
                     first = false;
                 } else {
                     instance.write_direct(",");
-                    if (instance.get_options().comma_space != 0 && instance.get_options().indent == 0) {
-                        instance.write_direct(std::format("{:{}}", " ", instance.get_options().comma_space));
+                    if constexpr (Options.comma_space != 0 && Options.indent == 0) {
+                        instance.write_direct(std::format("{:{}}", " ", Options.comma_space));
                     }
                 }
             }
 
             void write_indent() {
-                if (instance.get_options().indent != 0) {
-                    instance.write_direct(std::format("\n{:{}}", " ", indent * instance.get_options().indent));
+                if constexpr (Options.indent != 0) {
+                    instance.write_direct(std::format("\n{:{}}", " ", indent * Options.indent));
                 }
             }
 
@@ -159,8 +153,8 @@ namespace json_context::visitors {
 
                 instance.write_value(key);
                 instance.write_direct(":");
-                if (instance.get_options().colon_space != 0) {
-                    instance.write_direct(std::format("{:{}}", " ", instance.get_options().colon_space));
+                if constexpr (Options.colon_space != 0) {
+                    instance.write_direct(std::format("{:{}}", " ", Options.colon_space));
                 }
             }
         

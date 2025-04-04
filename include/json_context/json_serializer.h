@@ -6,12 +6,12 @@
 
 namespace json_context {
 
-    template<typename T, typename Context = no_context>
+    template<typename T, visitors::json_visitor_options Options = visitors::json_visitor_options{}, typename Context = no_context>
     requires serializable<T, Context>
-    auto to_string_json(T &&value, visitors::json_visitor_options options = {}, const Context &ctx = {}) {
+    auto to_string_json(T &&value, const Context &ctx = {}) {
         std::string buf;
         writers::string_writer writer{buf};
-        visitors::json_visitor visitor{writer, options};
+        visitors::json_visitor<writers::string_writer, Options> visitor{writer};
         serializer<std::remove_cvref_t<T>, Context>{}(visitor, std::forward<T>(value), ctx);
         return buf;
     }
