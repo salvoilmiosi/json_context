@@ -6,11 +6,11 @@
 namespace json_context::visitors {
 
     template<typename T>
-    concept visitor_base = requires (T &v) {
-        v.write_value(std::declval<std::string_view>());
+    concept visitor_base = requires (T &v, std::string_view str, int i, float f) {
+        v.write_value(str);
         v.write_value(nullptr);
-        v.write_value(std::declval<int>());
-        v.write_value(std::declval<float>());
+        v.write_value(i);
+        v.write_value(f);
     };
 
     template<typename T>
@@ -19,8 +19,8 @@ namespace json_context::visitors {
     };
 
     template<typename T>
-    concept object_visitor = inner_visitor<T> && requires (T &v) {
-        v.write_key(std::declval<std::string_view>());
+    concept object_visitor = inner_visitor<T> && requires (T &v, std::string_view str) {
+        v.write_key(str);
     };
 
     template<typename T>
