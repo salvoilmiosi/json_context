@@ -6,17 +6,29 @@
 #include "writer.h"
 
 namespace json_context::visitors {
+    
+    struct json_visitor_options {
+        int indent = 0;
+        int colon_space = 0;
+    };
 
     template<writers::writer W>
     class json_visitor {
     private:
         W &writer;
+        json_visitor_options options;
 
     public:
-        explicit json_visitor(W &writer): writer{writer} {}
+        explicit json_visitor(W &writer, json_visitor_options options = {})
+            : writer{writer}
+            , options{options} {}
 
         void write_direct(std::string_view value) {
             writer.write(value);
+        }
+
+        const json_visitor_options &get_options() const {
+            return options;
         }
 
         void write_value(std::nullptr_t) {
@@ -52,6 +64,8 @@ namespace json_context::visitors {
         class array_visitor {
         private:
             json_visitor &instance;
+            int indent;
+
             bool first = true;
 
             void write_comma() {
@@ -62,29 +76,43 @@ namespace json_context::visitors {
                 }
             }
 
+            void write_indent() {
+                if (instance.get_options().indent != 0) {
+                    instance.write_direct(std::format("\n{:{}}", " ", indent * instance.get_options().indent));
+                }
+            }
+
         public:
-            explicit array_visitor(json_visitor &instance)
+            explicit array_visitor(json_visitor &instance, int indent)
                 : instance{instance}
+                , indent{indent}
             {
                 instance.write_direct("[");
             }
         
             void write_value(auto &&value) {
                 write_comma();
+                write_indent();
                 instance.write_value(std::forward<decltype(value)>(value));
             }
 
             auto begin_write_array() {
                 write_comma();
-                return instance.begin_write_array();
+                write_indent();
+                return array_visitor{instance, indent + 1};
             }
 
             auto begin_write_object() {
                 write_comma();
-                return instance.begin_write_object();
+                write_indent();
+                return object_visitor{instance, indent + 1};
             }
 
             void end() {
+                if (!first) {
+                    --indent;
+                    write_indent();
+                }
                 instance.write_direct("]");
             }
         };
@@ -92,11 +120,20 @@ namespace json_context::visitors {
         class object_visitor {
         private:
             json_visitor &instance;
+            int indent;
+
             bool first = true;
 
+            void write_indent() {
+                if (instance.get_options().indent != 0) {
+                    instance.write_direct(std::format("\n{:{}}", " ", indent * instance.get_options().indent));
+                }
+            }
+
         public:
-            explicit object_visitor(json_visitor &instance)
+            explicit object_visitor(json_visitor &instance, int indent)
                 : instance{instance}
+                , indent{indent}
             {
                 instance.write_direct("{");
             }
@@ -107,9 +144,13 @@ namespace json_context::visitors {
                 } else {
                     instance.write_direct(",");
                 }
+                write_indent();
 
                 instance.write_value(key);
                 instance.write_direct(":");
+                if (instance.get_options().colon_space != 0) {
+                    instance.write_direct(std::format("{:{}}", " ", instance.get_options().colon_space));
+                }
             }
         
             void write_value(auto &&value) {
@@ -117,14 +158,18 @@ namespace json_context::visitors {
             }
 
             auto begin_write_array() {
-                return instance.begin_write_array();
+                return array_visitor{instance, indent + 1};
             }
 
             auto begin_write_object() {
-                return instance.begin_write_object();
+                return object_visitor{instance, indent + 1};
             }
 
             void end() {
+                if (!first) {
+                    --indent;
+                    write_indent();
+                }
                 instance.write_direct("}");
             }
         };
@@ -132,11 +177,11 @@ namespace json_context::visitors {
     public:
 
         auto begin_write_array() {
-            return array_visitor{*this};
+            return array_visitor{*this, 1};
         }
 
         auto begin_write_object() {
-            return object_visitor{*this};
+            return object_visitor{*this, 1};
         }
     };
     

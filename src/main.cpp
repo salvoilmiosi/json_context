@@ -24,5 +24,8 @@ int main() {
             "Foo", "Bar", "Baz", { "Lorem", "Ipsum" }
         },
         .variant {test_variant{ 42, 69 }}
+    }, {
+        .indent = 2,
+        .colon_space = 1
     }));
 }
