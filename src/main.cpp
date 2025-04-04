@@ -16,6 +16,15 @@ struct test_struct {
     std::variant<std::monostate, test_variant> variant;
 };
 
+namespace json_context {
+    template<> struct serializer<int, int> {
+        template<visitors::visitor V>
+        void operator()(V &visitor, int value, int ctx) {
+            visitor.write_value(value + ctx);
+        }
+    };
+}
+
 int main() {
     std::println("{}", json_context::to_string_json(test_struct {
         .foo{99},
@@ -27,5 +36,5 @@ int main() {
     }, {
         .indent = 2,
         .colon_space = 1
-    }));
+    }, 10));
 }
