@@ -18,9 +18,9 @@ struct test_struct {
 
 namespace json_context {
     template<> struct serializer<int, int> {
-        template<visitors::visitor V>
-        void operator()(V &visitor, int value, int ctx) {
-            visitor.write_value(value + ctx);
+        template<writers::writer W>
+        void operator()(W &writer, int value, int ctx) {
+            writer.write_value(value + ctx);
         }
     };
 }

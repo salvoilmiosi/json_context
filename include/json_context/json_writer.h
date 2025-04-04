@@ -1,29 +1,29 @@
-#ifndef __JSON_VISITOR_H__
-#define __JSON_VISITOR_H__
+#ifndef __JSON_writer_H__
+#define __JSON_writer_H__
 
 #include <format>
 
 #include "writer.h"
 
-namespace json_context::visitors {
+namespace json_context::writers {
     
-    struct json_visitor_options {
+    struct json_writer_options {
         int indent = 0;
         int colon_space = 0;
         int comma_space = 0;
     };
 
-    template<writers::writer W, json_visitor_options Options = json_visitor_options{}>
-    class json_visitor {
+    template<writers::output_buffer Buffer, json_writer_options Options = json_writer_options{}>
+    class json_writer {
     private:
-        W &writer;
+        Buffer &buffer;
 
     public:
-        explicit json_visitor(W &writer)
-            : writer{writer} {}
+        explicit json_writer(Buffer &buffer)
+            : buffer{buffer} {}
 
         void write_direct(std::string_view value) {
-            writer.write(value);
+            buffer.append(value);
         }
 
         void write_value(std::nullptr_t) {
@@ -56,9 +56,9 @@ namespace json_context::visitors {
 
     private:
         
-        class array_visitor {
+        class array_writer {
         private:
-            json_visitor &instance;
+            json_writer &instance;
             int indent;
 
             bool first = true;
@@ -86,7 +86,7 @@ namespace json_context::visitors {
             }
 
         public:
-            explicit array_visitor(json_visitor &instance, int indent)
+            explicit array_writer(json_writer &instance, int indent)
                 : instance{instance}
                 , indent{indent}
             {
@@ -102,13 +102,13 @@ namespace json_context::visitors {
             auto begin_write_array() {
                 write_comma();
                 write_indent();
-                return array_visitor{instance, indent + 1};
+                return array_writer{instance, indent + 1};
             }
 
             auto begin_write_object() {
                 write_comma();
                 write_indent();
-                return object_visitor{instance, indent + 1};
+                return object_writer{instance, indent + 1};
             }
 
             void end() {
@@ -120,9 +120,9 @@ namespace json_context::visitors {
             }
         };
         
-        class object_visitor {
+        class object_writer {
         private:
-            json_visitor &instance;
+            json_writer &instance;
             int indent;
 
             bool first = true;
@@ -150,7 +150,7 @@ namespace json_context::visitors {
             }
 
         public:
-            explicit object_visitor(json_visitor &instance, int indent)
+            explicit object_writer(json_writer &instance, int indent)
                 : instance{instance}
                 , indent{indent}
             {
@@ -175,11 +175,11 @@ namespace json_context::visitors {
             }
 
             auto begin_write_array() {
-                return array_visitor{instance, indent + 1};
+                return array_writer{instance, indent + 1};
             }
 
             auto begin_write_object() {
-                return object_visitor{instance, indent + 1};
+                return object_writer{instance, indent + 1};
             }
 
             void end() {
@@ -194,11 +194,11 @@ namespace json_context::visitors {
     public:
 
         auto begin_write_array() {
-            return array_visitor{*this, 1};
+            return array_writer{*this, 1};
         }
 
         auto begin_write_object() {
-            return object_visitor{*this, 1};
+            return object_writer{*this, 1};
         }
     };
     

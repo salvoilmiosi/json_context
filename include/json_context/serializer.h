@@ -7,7 +7,7 @@
 #include <variant>
 #include <reflect>
 
-#include "visitor.h"
+#include "writer.h"
 
 namespace json_context {
 
@@ -23,33 +23,33 @@ namespace json_context {
 
     template<std::integral T, typename Context>
     struct serializer<T, Context> {
-        template<visitors::visitor V>
-        void operator()(V &visitor, T value, const Context &ctx) const {
-            visitor.write_value(value);
+        template<writers::writer W>
+        void operator()(W &writer, T value, const Context &ctx) const {
+            writer.write_value(value);
         }
     };
 
     template<std::floating_point T, typename Context>
     struct serializer<T, Context> {
-        template<visitors::visitor V>
-        void operator()(V &visitor, T value, const Context &ctx) const {
-            visitor.write_value(value);
+        template<writers::writer W>
+        void operator()(W &writer, T value, const Context &ctx) const {
+            writer.write_value(value);
         }
     };
 
     template<typename Context>
     struct serializer<bool, Context> {
-        template<visitors::visitor V>
-        void operator()(V &visitor, bool value, const Context &ctx) const {
-            visitor.write_value(value);
+        template<writers::writer W>
+        void operator()(W &writer, bool value, const Context &ctx) const {
+            writer.write_value(value);
         }
     };
 
     template<std::convertible_to<std::string_view> T, typename Context>
     struct serializer<T, Context> {
-        template<visitors::visitor V>
-        void operator()(V &visitor, const T &value, const Context &ctx) const {
-            visitor.write_value(value);
+        template<writers::writer W>
+        void operator()(W &writer, const T &value, const Context &ctx) const {
+            writer.write_value(value);
         }
     };
 
@@ -59,9 +59,9 @@ namespace json_context {
         && !std::is_convertible_v<Range, std::string_view>
     )
     struct serializer<Range, Context> {
-        template<visitors::visitor V>
-        void operator()(V &visitor, const Range &range, const Context &ctx) const {
-            auto array = visitor.begin_write_array();
+        template<writers::writer W>
+        void operator()(W &writer, const Range &range, const Context &ctx) const {
+            auto array = writer.begin_write_array();
 
             using value_type = std::ranges::range_value_t<Range>;
             for (auto &&value : range) {
@@ -75,9 +75,9 @@ namespace json_context {
     template<typename Context, typename ... Ts>
     requires (serializable<Ts, Context> && ...)
     struct serializer<std::tuple<Ts ...>, Context> {
-        template<visitors::visitor V>
-        void operator()(V &visitor, const std::tuple<Ts ...> &tuple, const Context &ctx) const {
-            auto array = visitor.begin_write_array();
+        template<writers::writer W>
+        void operator()(W &writer, const std::tuple<Ts ...> &tuple, const Context &ctx) const {
+            auto array = writer.begin_write_array();
 
             auto serialize_inner = [&](auto &&value) {
                 using value_type = std::remove_cvref_t<decltype(value)>;
@@ -97,9 +97,9 @@ namespace json_context {
 
     template<aggregate T, typename Context>
     struct serializer<T, Context> {
-        template<visitors::visitor V>
-        void operator()(V &visitor, const T &value, const Context &ctx) const {
-            auto object = visitor.begin_write_object();
+        template<writers::writer W>
+        void operator()(W &writer, const T &value, const Context &ctx) const {
+            auto object = writer.begin_write_object();
 
             reflect::for_each<T>([&](auto I) {
                 using member_type = reflect::member_type<I, T>;
@@ -116,9 +116,9 @@ namespace json_context {
     struct serializer<std::variant<Ts ...>, Context> {
         using variant_type = std::variant<Ts ...>;
 
-        template<visitors::visitor V>
-        void operator()(V &visitor, const variant_type &value, const Context &ctx) const {
-            auto object = visitor.begin_write_object();
+        template<writers::writer W>
+        void operator()(W &writer, const variant_type &value, const Context &ctx) const {
+            auto object = writer.begin_write_object();
 
             std::visit([&](const auto &inner_value) {
                 using member_type = std::remove_cvref_t<decltype(inner_value)>;
