@@ -4,6 +4,7 @@
 #include <string>
 #include <ranges>
 #include <tuple>
+#include <variant>
 #include <reflect>
 
 #include "visitor.h"
@@ -97,7 +98,7 @@ namespace json_context {
     template<aggregate T, typename Context>
     struct serializer<T, Context> {
         template<visitors::visitor V>
-        void operator()(V &visitor, T &&value, const Context &ctx) const {
+        void operator()(V &visitor, const T &value, const Context &ctx) const {
             auto object = visitor.begin_write_object();
 
             reflect::for_each<T>([&](auto I) {
@@ -105,6 +106,24 @@ namespace json_context {
                 object.write_key(reflect::member_name<I, T>());
                 serializer<member_type, Context>{}(object, reflect::get<I>(value), ctx);
             });
+
+            object.end();
+        }
+    };
+
+    template<typename Context, typename ... Ts> requires (serializable<Ts, Context> && ...)
+    struct serializer<std::variant<Ts ...>, Context> {
+        using variant_type = std::variant<Ts ...>;
+
+        template<visitors::visitor V>
+        void operator()(V &visitor, const variant_type &value, const Context &ctx) const {
+            auto object = visitor.begin_write_object();
+
+            std::visit([&](const auto &inner_value) {
+                using member_type = std::remove_cvref_t<decltype(inner_value)>;
+                object.write_key(reflect::type_name<member_type>());
+                serializer<member_type, Context>{}(object, inner_value, ctx);
+            }, value);
 
             object.end();
         }
