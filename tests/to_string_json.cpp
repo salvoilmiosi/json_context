@@ -6,7 +6,7 @@
 
 int main() {
     struct test_variant {
-        int n;
+        float n;
         int m;
     };
     
@@ -23,7 +23,7 @@ int main() {
         .inner {
             "Foo", { "Bar", "Baz" }
         },
-        .variant {test_variant{ 42, 69 }}
+        .variant {test_variant{ std::numeric_limits<float>::max(), 42 }}
     };
 
     std::string expected_json = R"({
@@ -38,8 +38,8 @@ int main() {
   ],
   "variant": {
     "test_variant": {
-      "n": 42,
-      "m": 69
+      "n": 3.4028235e+38,
+      "m": 42
     }
   }
 })";
@@ -48,6 +48,8 @@ int main() {
         .indent = 2,
         .colon_space = 1
     }>(sample_data);
+
+    std::cout << result << '\n';
 
     assert(result == expected_json);
 }

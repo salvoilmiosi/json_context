@@ -1,11 +1,16 @@
 #ifndef __JSON_writer_H__
 #define __JSON_writer_H__
 
-#include <format>
+#include <charconv>
+#include <stdexcept>
 
 #include "writer.h"
 
 namespace json_context::writers {
+
+    struct json_writer_error : std::runtime_error {
+        using std::runtime_error::runtime_error;
+    };
     
     struct json_writer_options {
         int indent = 0;
@@ -32,12 +37,24 @@ namespace json_context::writers {
 
         template<std::integral T>
         void write_value(T value) {
-            write_direct(std::format("{}", value));
+            static constexpr auto buffer_size = 16;
+            std::array<char, buffer_size> buf;
+            auto [end, ec] = std::to_chars(buf.data(), buf.data() + buf.size(), value);
+            if (ec != std::errc{}) {
+                throw json_writer_error{"Error writing integral value"};
+            }
+            write_direct(std::string_view(buf.data(), end));
         };
 
         template<std::floating_point T>
         void write_value(T value) {
-            write_direct(std::format("{}", value));
+            static constexpr auto buffer_size = 16;
+            std::array<char, buffer_size> buf;
+            auto [end, ec] = std::to_chars(buf.data(), buf.data() + buf.size(), value);
+            if (ec != std::errc{}) {
+                throw json_writer_error{"Error writing floating point value"};
+            }
+            write_direct(std::string_view(buf.data(), end));
         };
 
         void write_value(bool value) {
@@ -51,7 +68,9 @@ namespace json_context::writers {
         template<std::convertible_to<std::string_view> T>
         void write_value(T &&value) {
             // TODO fix character escapes
-            write_direct(std::format("\"{}\"", std::string_view{std::forward<T>(value)}));
+            write_direct("\"");
+            write_direct(value);
+            write_direct("\"");
         }
 
     private:
