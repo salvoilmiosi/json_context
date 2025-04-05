@@ -60,6 +60,20 @@ namespace json_context {
             array.end();
         }
     };
+    
+    template<typename First, typename Second, typename Context>
+    requires (serializable<First, Context> && serializable<Second, Context>)
+    struct serializer<std::pair<First, Second>, Context> {
+        template<writers::writer W>
+        void operator()(W &writer, const std::pair<First, Second> &pair, const Context &ctx) const {
+            auto array = writer.begin_write_array();
+
+            serialize(array, pair.first, ctx);
+            serialize(array, pair.second, ctx);
+
+            array.end();
+        }
+    };
 
     template<typename Context, typename ... Ts>
     requires (serializable<Ts, Context> && ...)

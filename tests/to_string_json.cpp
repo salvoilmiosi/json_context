@@ -1,10 +1,11 @@
 #include <iostream>
 #include <cassert>
 #include <vector>
+#include <map>
 
 #include "json_context/json_serializer.h"
 
-int main() {
+void test_json_to_string1() {
     struct test_variant {
         float n;
         int m;
@@ -52,4 +53,23 @@ int main() {
     std::cout << result << '\n';
 
     assert(result == expected_json);
+}
+
+void test_json_to_string2() {
+    struct test_struct {
+        std::map<int, int> value;
+    };
+
+    test_struct sample_data{
+        .value {
+            { 1, 2 }, { 3, 4 }, { 5, 6}
+        }
+    };
+
+    std::cout << json_context::to_string_json(sample_data) << '\n';
+}
+
+int main() {
+    test_json_to_string1();
+    test_json_to_string2();
 }
