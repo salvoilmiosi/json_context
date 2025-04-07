@@ -29,7 +29,7 @@ namespace json_context {
             if (auto value = reader.read_int()) {
                 return reader.get_parser().parse_int(*value);
             }
-            return std::nullopt;
+            return std::nullopt; // error reading int
         }
     };
 
@@ -40,7 +40,7 @@ namespace json_context {
             if (auto value = reader.read_float()) {
                 return reader.get_parser().parse_float(*value);
             }
-            return std::nullopt;
+            return std::nullopt; // error reading float
         }
     };
 
@@ -51,7 +51,7 @@ namespace json_context {
             if (auto value = reader.read_string()) {
                 return reader.get_parser().parse_string(*value);
             }
-            return std::nullopt;
+            return std::nullopt; // error reading string
         }
     };
 
@@ -63,11 +63,11 @@ namespace json_context {
             std::vector<T> result;
 
             auto array = reader.begin_read_array();
-            if (!array) return std::nullopt;
+            if (!array) return std::nullopt; // expected '['
 
             while (!array->read_end()) {
                 auto value = deserialize<T>(*array, ctx);
-                if (!value) return std::nullopt;
+                if (!value) return std::nullopt; // error deserializing T
 
                 result.push_back(std::move(*value));
             }
@@ -82,15 +82,15 @@ namespace json_context {
         template<readers::reader R>
         std::optional<std::pair<First, Second>> operator()(R &reader, const Context &ctx) const {
             auto array = reader.begin_read_array();
-            if (!array) return std::nullopt;
+            if (!array) return std::nullopt; // expected '['
 
             auto first = deserialize<First>(*array, ctx);
-            if (!first) return std::nullopt;
+            if (!first) return std::nullopt; // error deserializing First
 
             auto second = deserialize<Second>(*array, ctx);
-            if (!second) return std::nullopt;
+            if (!second) return std::nullopt; // error deserializing Second
 
-            if (!array->read_end()) return std::nullopt;
+            if (!array->read_end()) return std::nullopt; // expected ']'
 
             return { std::in_place, std::move(first), std::move(second) };
         }
@@ -104,7 +104,7 @@ namespace json_context {
         template<readers::reader R>
         std::optional<tuple_type> operator()(R &reader, const Context &ctx) const {
             auto array = reader.begin_read_array();
-            if (!array) return std::nullopt;
+            if (!array) return std::nullopt; // expected '['
 
             std::tuple<std::optional<Ts> ...> result{};
 
@@ -112,7 +112,7 @@ namespace json_context {
                 if (((std::get<Is>(result) = deserialize<std::tuple_element_t<Is, tuple_type>>(*array, ctx)).has_value() && ...) && array->read_end()) {
                     return { std::in_place, std::move(*(std::get<Is>(result))) ... };
                 } else {
-                    return std::nullopt;
+                    return std::nullopt; // error deserializing any of the fields or expected ']'
                 }
             }(std::index_sequence_for<Ts ...>());
         }
@@ -123,7 +123,7 @@ namespace json_context {
         template<readers::reader R, size_t ... Is>
         std::optional<T> deserialize_helper(std::index_sequence<Is ...>, R &reader, const Context &ctx) const {
             auto object = reader.begin_read_object();
-            if (!object) return std::nullopt;
+            if (!object) return std::nullopt; // expected '{'
             
             using result_tuple_type = std::tuple<std::optional<reflect::member_type<Is, T>> ...>;
             result_tuple_type result{};
@@ -137,10 +137,10 @@ namespace json_context {
                 [](R &reader, const Context &ctx, result_tuple_type &result) -> bool {
                     auto &member = std::get<Is>(result);
                     if (member.has_value()) {
-                        return false;
+                        return false; // duplicate field
                     }
                     member = deserialize<reader::member_type<Is, T>>(reader, ctx);
-                    return true;
+                    return member.has_value(); // if false, error deserializing field
                 } ...
             };
 
@@ -148,19 +148,19 @@ namespace json_context {
 
             while (!object->read_end()) {
                 auto key = object->read_key();
-                if (!key) return std::nullopt;
+                if (!key) return std::nullopt; // expected key
 
                 auto key_str = reader.get_parser().parse_string(*key);
 
                 auto key_it = names_map.find(key_str);
-                if (key_it == names_map.end()) return std::nullopt;
+                if (key_it == names_map.end()) return std::nullopt; // cannot find key
 
-                if (!vtable[key_it->second](reader, ctx, result)) return std::nullopt;
+                if (!vtable[key_it->second](reader, ctx, result)) return std::nullopt; // duplicate field or error deserializing
 
                 ++count;
             }
 
-            if (count != sizeof...(Ts)) return std::nullopt;
+            if (count != sizeof...(Ts)) return std::nullopt; // field missing
             
             return { std::in_place, std::move(*(std::get<Is>(result))) ... };
         }
@@ -178,7 +178,7 @@ namespace json_context {
         template<readers::reader R>
         std::optional<variant_type> operator()(R &reader, const Context &ctx) const {
             auto object = reader.begin_read_object();
-            if (!object) return std::nullopt;
+            if (!object) return std::nullopt; // expected '{'
 
             static constexpr auto names_map = []<size_t ... Is>(std::index_sequence<Is ...>) {
                 return utils::make_static_map<std::string_view, size_t>({
@@ -187,12 +187,12 @@ namespace json_context {
             }(std::index_sequence_for<Ts ...>());
 
             auto key = object->read_key();
-            if (!key) return std::nullopt;
+            if (!key) return std::nullopt; // expected key
 
             auto key_str = reader.get_parser().parse_string(*key);
 
             auto key_it = names_map.find(key_str);
-            if (key_it == names_map.end()) return std::nullopt;
+            if (key_it == names_map.end()) return std::nullopt; // cannot find key
 
             using object_reader = decltype(*object);
             using vtable_fun = std::optional<variant_type>(*)(object_reader &reader, const Context &ctx);
@@ -200,14 +200,14 @@ namespace json_context {
                 [](object_reader &reader, const Context &ctx) -> std::optional<variant_type> {
                     auto value = deserialize<Ts>(reader, ctx);
                     if (value) return { std::move(*value) };
-                    return std::nullopt;
+                    return std::nullopt; // error deserializing field
                 } ...
             };
 
             auto result = vtable[key_it->second](*object, ctx);
-            if (!result) return std::nullopt;
+            if (!result) return std::nullopt; // error deserializing field
 
-            if (!object->read_end()) return std::nullopt;
+            if (!object->read_end()) return std::nullopt; // expected '}'
 
             return result;
         }
