@@ -1,18 +1,9 @@
 #ifndef __SERIALIZER_H__
 #define __SERIALIZER_H__
 
-#include <string>
-#include <ranges>
-#include <tuple>
-#include <variant>
-#include <reflect>
-
 #include "writer.h"
 
 namespace json_context {
-
-    template<typename T>
-    concept is_complete = requires(T self) { sizeof(self); };
 
     template<typename T, typename Context> struct serializer;
 
@@ -22,15 +13,13 @@ namespace json_context {
     template<typename T>
     concept writable_as_value = std::integral<T> || std::floating_point<T> || std::convertible_to<T, std::string_view>;
 
-    struct no_context {};
-
-    template<writers::writer W, typename T, typename Context = no_context> requires serializable<T, Context>
+    template<typename T, writers::writer W, typename Context = no_context> requires serializable<T, Context>
     void serialize(W &writer, const T &value, const Context &context = {}) {
         serializer<T, Context> obj{};
         if constexpr (requires { obj(writer, value, context); }) {
-            return obj(writer, value, context);
+            obj(writer, value, context);
         } else {
-            return obj(writer, value);
+            obj(writer, value);
         }
     }
 
@@ -89,9 +78,6 @@ namespace json_context {
             array.end();
         }
     };
-
-    template<typename T>
-    concept aggregate = std::is_aggregate_v<T>;
 
     template<aggregate T, typename Context>
     struct serializer<T, Context> {

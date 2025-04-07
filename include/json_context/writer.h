@@ -1,7 +1,7 @@
 #ifndef __WRITER_H__
 #define __WRITER_H__
 
-#include <string>
+#include "types.h"
 
 namespace json_context::writers {
 

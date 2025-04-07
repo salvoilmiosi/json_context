@@ -1,5 +1,5 @@
-#ifndef __JSON_SERIALIZER_H__
-#define __JSON_SERIALIZER_H__
+#ifndef __JSON_CONTEXT_H__
+#define __JSON_CONTEXT_H__
 
 #include "json_writer.h"
 #include "serializer.h"

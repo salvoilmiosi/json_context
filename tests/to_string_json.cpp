@@ -3,7 +3,7 @@
 #include <vector>
 #include <map>
 
-#include "json_context/json_serializer.h"
+#include "json_context/json_context.h"
 
 void test_json_to_string1() {
     struct test_variant {
