@@ -7,10 +7,6 @@
 #include "writer.h"
 
 namespace json_context::writers {
-
-    struct json_writer_error : std::runtime_error {
-        using std::runtime_error::runtime_error;
-    };
     
     struct json_writer_options {
         int indent = 0;
